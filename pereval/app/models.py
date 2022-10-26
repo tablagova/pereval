@@ -1,3 +1,52 @@
 from django.db import models
 
-# Create your models here.
+
+ADDED_STATUS = [
+    ('new', 'новая заявка'),
+    ('pending', 'заявка рассматривается'),
+    ('accepted', 'данные приняты'),
+    ('rejected', 'данные не приняты'),
+]
+
+
+class Users(models.Model):
+    email = models.EmailField(unique=True)
+    phone = models.CharField(max_length=25)
+    fam = models.CharField(max_length=50)
+    name = models.CharField(max_length=25)
+    otc = models.CharField(max_length=25)
+
+
+class Coords(models.Model):
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    height = models.IntegerField()
+
+
+class PerevalAdded(models.Model):
+    date_added = models.DateTimeField(auto_now_add=True)
+    beauty_title = models.CharField(max_length=255)
+    title = models.CharField(max_length=255)
+    other_titles = models.CharField(max_length=255)
+    connect = models.CharField(max_length=255, blank=True)
+    add_time = models.DateTimeField()
+    user = models.ForeignKey(Users, on_delete=models.CASCADE)
+    coord = models.ForeignKey(Coords, on_delete=models.CASCADE)
+    winter_level = models.CharField(max_length=10, blank=True)
+    summer_level = models.CharField(max_length=10, blank=True)
+    autumn_level = models.CharField(max_length=10, blank=True)
+    spring_level = models.CharField(max_length=10, blank=True)
+    status = models.CharField(max_length=10, choices=ADDED_STATUS, default=ADDED_STATUS[0])
+
+    class Meta:
+        db_table = 'pereval_added'
+
+    def __str__(self):
+        return f'{self.title}'
+
+
+class Images(models.Model):
+    date_added = models.DateTimeField(auto_now_add=True)
+    title = models.CharField(max_length=20)
+    img = models.BinaryField()
+    pereval = models.ForeignKey(PerevalAdded, on_delete=models.CASCADE)
