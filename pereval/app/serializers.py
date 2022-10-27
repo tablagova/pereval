@@ -14,6 +14,9 @@ class UsersSerializer(serializers.ModelSerializer):
             'otc',
         ]
 
+        def create(self, validated_data):
+            return Users.objects.create(**validated_data)
+
 
 class CoordsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -25,11 +28,11 @@ class CoordsSerializer(serializers.ModelSerializer):
             'height'
         ]
 
+        def create(self, validated_data):
+            return Coords.objects.create(**validated_data)
+
 
 class PerevalAddedSerializer(serializers.ModelSerializer):
-    coord = CoordsSerializer(read_only=True)
-    # image = ImagesSerializer(read_only=True)
-    user = UsersSerializer(read_only=True)
 
     class Meta:
         model = PerevalAdded
@@ -50,9 +53,11 @@ class PerevalAddedSerializer(serializers.ModelSerializer):
             'status',
         ]
 
+        def create(self, validated_data):
+            return PerevalAdded.objects.create(**validated_data)
+
 
 class ImagesSerializer(serializers.ModelSerializer):
-    pereval = PerevalAddedSerializer(read_only=True)
 
     class Meta:
         model = Images
@@ -61,4 +66,8 @@ class ImagesSerializer(serializers.ModelSerializer):
             'date_added',
             'title',
             'img',
+            'pereval',
         ]
+
+        def create(self, validated_data):
+            return Images.objects.create(**validated_data)
