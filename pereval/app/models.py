@@ -22,6 +22,9 @@ class Coords(models.Model):
     longitude = models.FloatField()
     height = models.IntegerField()
 
+    class Meta:
+        db_table = 'pereval_coords'
+
 
 class PerevalAdded(models.Model):
     date_added = models.DateTimeField(auto_now_add=True)
@@ -36,13 +39,10 @@ class PerevalAdded(models.Model):
     summer_level = models.CharField(max_length=10, blank=True)
     autumn_level = models.CharField(max_length=10, blank=True)
     spring_level = models.CharField(max_length=10, blank=True)
-    status = models.CharField(max_length=10, choices=ADDED_STATUS, default=ADDED_STATUS[0])
+    status = models.CharField(max_length=50, choices=ADDED_STATUS, default=ADDED_STATUS[0])
 
     class Meta:
         db_table = 'pereval_added'
-
-    def __str__(self):
-        return f'{self.title}'
 
 
 class Images(models.Model):
@@ -50,3 +50,6 @@ class Images(models.Model):
     title = models.CharField(max_length=20)
     img = models.BinaryField()
     pereval = models.ForeignKey(PerevalAdded, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'pereval_images'
