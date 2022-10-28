@@ -17,6 +17,14 @@ class UsersSerializer(serializers.ModelSerializer):
         def create(self, validated_data):
             return Users.objects.create(**validated_data)
 
+        def update(self, instance, validated_data):
+            instance.phone = validated_data.get('phone', instance.phone)
+            instance.fam = validated_data.get('fam', instance.fam)
+            instance.name = validated_data.get('name', instance.name)
+            instance.otc = validated_data.get('otc', instance.otc)
+            instance.save()
+            return instance
+
 
 class CoordsSerializer(serializers.ModelSerializer):
     class Meta:

@@ -16,6 +16,9 @@ class Users(models.Model):
     name = models.CharField(max_length=25)
     otc = models.CharField(max_length=25)
 
+    class Meta:
+        db_table = 'pereval_user'
+
 
 class Coords(models.Model):
     latitude = models.FloatField()
