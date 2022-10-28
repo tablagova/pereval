@@ -1,9 +1,10 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import viewsets
 from app.serializers import *
 
 
-class PerevalAPIView(APIView):
+class PerevalAPIView(viewsets.ViewSet):
 
     def serializer_error_response(self, errors):
         message = ''
@@ -11,7 +12,7 @@ class PerevalAPIView(APIView):
             message += f'{k}: {str(*v)}'
         return Response({'message': message, 'id': None}, status=400)
 
-    def post(self, request):
+    def submitData(self, request):
 
         try:
             data = request.data
@@ -53,7 +54,6 @@ class PerevalAPIView(APIView):
                 image['pereval'] = pereval_new.id
                 image['img'] = image['data']
                 image.pop('data')
-                print(image)
                 serializer = ImagesSerializer(data=image)
                 if serializer.is_valid():
                     serializer.save()
