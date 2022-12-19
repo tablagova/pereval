@@ -29,6 +29,16 @@ class Coords(models.Model):
         db_table = 'pereval_coords'
 
 
+class Level(models.Model):
+    winter_level = models.CharField(max_length=10, blank=True)
+    summer_level = models.CharField(max_length=10, blank=True)
+    autumn_level = models.CharField(max_length=10, blank=True)
+    spring_level = models.CharField(max_length=10, blank=True)
+
+    class Meta:
+        db_table = 'pereval_level'
+
+
 class PerevalAdded(models.Model):
     date_added = models.DateTimeField(auto_now_add=True)
     beauty_title = models.CharField(max_length=255)
@@ -37,12 +47,9 @@ class PerevalAdded(models.Model):
     connect = models.CharField(max_length=255, blank=True)
     add_time = models.DateTimeField()
     user = models.ForeignKey(Users, on_delete=models.CASCADE)
-    coord = models.ForeignKey(Coords, on_delete=models.CASCADE)
-    winter_level = models.CharField(max_length=10, blank=True)
-    summer_level = models.CharField(max_length=10, blank=True)
-    autumn_level = models.CharField(max_length=10, blank=True)
-    spring_level = models.CharField(max_length=10, blank=True)
-    status = models.CharField(max_length=50, choices=ADDED_STATUS, default=ADDED_STATUS[0])
+    coords = models.ForeignKey(Coords, on_delete=models.CASCADE)
+    level = models.ForeignKey(Level, blank=True, on_delete=models.PROTECT)
+    status = models.CharField(max_length=50, choices=ADDED_STATUS, default='new')
 
     class Meta:
         db_table = 'pereval_added'
@@ -51,8 +58,8 @@ class PerevalAdded(models.Model):
 class Images(models.Model):
     date_added = models.DateTimeField(auto_now_add=True)
     title = models.CharField(max_length=20)
-    img = models.BinaryField()
-    pereval = models.ForeignKey(PerevalAdded, on_delete=models.CASCADE)
+    data = models.BinaryField()
+    pereval = models.ForeignKey(PerevalAdded, related_name='images', on_delete=models.CASCADE)
 
     class Meta:
         db_table = 'pereval_images'

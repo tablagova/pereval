@@ -1,67 +1,99 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import viewsets
-from app.serializers import *
+from .serializers import *
+from .models import PerevalAdded, ADDED_STATUS
 
 
 class PerevalAPIView(viewsets.ViewSet):
 
-    def serializer_error_response(self, errors):
+    def serializer_error_response(self, errors, param='id'):
         message = ''
         for k, v in errors.items():
             message += f'{k}: {str(*v)}'
-        return Response({'message': message, 'id': None}, status=400)
+        if param == 'state':
+            return Response({'message': message, 'state': 0}, status=400)
+        else:
+            return Response({'message': message, 'id': None}, status=400)
 
-    def submitData(self, request):
+    def get_one(self, request, **kwargs):
+        try:
+            pereval = PerevalAdded.objects.get(pk=kwargs['pk'])
+            data = PerevalAddedSerializer(pereval).data
+            return Response(data, status=200)
+        except:
+            return Response({'message': "There's no such record", 'id': None}, status=400)
 
+    def get_user_records(self, request, **kwargs):
+        try:
+            user = Users.objects.get(email=request.GET['user_email'])
+            perevals = PerevalAdded.objects.filter(user=user)
+        except:
+            perevals = {}
+        data = PerevalAddedSerializer(perevals, many=True).data
+        return Response(data, status=200)
+
+    def post(self, request):
         try:
             data = request.data
 
-            try:
-                user = Users.objects.get(email=data['user']['email'])
-                serializer = UsersSerializer(user, data=data['user'])
-            except:
-                serializer = UsersSerializer(data=data['user'])
-
-            if serializer.is_valid():
-                user = serializer.save()
-            else:
-                return self.serializer_error_response(serializer.errors)
-
-            serializer = CoordsSerializer(data=data['coords'])
-            if serializer.is_valid():
-                coords_new = serializer.save()
-            else:
-                return self.serializer_error_response(serializer.errors)
-
-            data['user'] = user.id
-            data['coord'] = coords_new.id
-            data['winter_level'] = data['level']['winter']
-            data['summer_level'] = data['level']['summer']
-            data['autumn_level'] = data['level']['autumn']
-            data['spring_level'] = data['level']['spring']
-            data.pop('coords')
-            data.pop('level')
-
-            serializer = PerevalAddedSerializer(data=data)
-            if serializer.is_valid():
-                pereval_new = serializer.save()
-            else:
-                return self.serializer_error_response(serializer.errors)
-
-            images = data['images']
-            for image in images:
-                image['pereval'] = pereval_new.id
-                image['img'] = image['data']
-                image.pop('data')
-                serializer = ImagesSerializer(data=image)
+            def create_dependence(serializer):
                 if serializer.is_valid():
-                    serializer.save()
+                    return serializer.save()
                 else:
                     return self.serializer_error_response(serializer.errors)
 
-            return Response({'message': None, 'id': pereval_new.id}, status=200)
+            try:
+                user = Users.objects.get(email=data['user']['email'])
+                user_serializer = UsersSerializer(user, data=data['user'])
+            except:
+                user_serializer = UsersSerializer(data=data['user'])
+
+            images = data['images']
+
+            serializer = PerevalAddedSerializer(data=data)
+            if serializer.is_valid():
+                data.pop('user')
+                data.pop('images')
+                pereval_new = PerevalAdded.objects.create(
+                    user=create_dependence(user_serializer),
+                    coords=create_dependence(CoordsSerializer(data=data.pop('coords'))),
+                    level=create_dependence(LevelSerializer(data=data.pop('level'))),
+                    **data)
+            else:
+                return self.serializer_error_response(serializer.errors)
+
+            for image in images:
+                image['pereval'] = pereval_new.id
+                create_dependence(ImagesSerializer(data=image))
+
+            return Response({'message': None, 'id': pereval_new.id}, status=201)
 
         except Exception as inst:
             return Response({'message': str(inst), 'id': None}, status=500)
 
+    def edit_one_record(self, reguest, **kwargs):
+        try:
+            pereval = PerevalAdded.objects.get(pk=kwargs['pk'])
+            if pereval.status == 'new':
+                data = reguest.data
+                data.pop('user')
+                Images.objects.filter(pereval_id=pereval.id).delete()
+                images = data.pop('images')
+                serializers = []
+                serializers.append(CoordsSerializer(Coords.objects.get(id=pereval.coords_id), data=data.pop('coords')))
+                serializers.append(LevelSerializer(Level.objects.get(id=pereval.level_id), data=data.pop('level')))
+                serializers.append((PerevalAddedSerializer(pereval, data=data)))
+                for image in images:
+                    image['pereval'] = pereval.id
+                    serializers.append(ImagesSerializer(data=image))
+                for serializer in serializers:
+                    if serializer.is_valid():
+                        serializer.save()
+                    else:
+                        return self.serializer_error_response(serializer.errors, 'state')
+                return Response({'message': None, 'state': 1}, status=202)
+            else:
+                return Response({'message': "The status of record isn't new", 'state': 0}, status=400)
+        except:
+            return Response({'message': "There's no such record", 'state': 0}, status=400)
