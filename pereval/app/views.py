@@ -3,6 +3,8 @@ from rest_framework.views import APIView
 from rest_framework import viewsets
 from .serializers import *
 from .models import PerevalAdded, ADDED_STATUS
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 
 class PerevalAPIView(viewsets.ViewSet):
@@ -24,6 +26,9 @@ class PerevalAPIView(viewsets.ViewSet):
         except:
             return Response({'message': "There's no such record", 'id': None}, status=400)
 
+    user_email = openapi.Parameter('user_email', openapi.IN_QUERY, description="user e-mail", type=openapi.TYPE_STRING)
+
+    @swagger_auto_schema(manual_parameters=[user_email])
     def get_user_records(self, request, **kwargs):
         try:
             user = Users.objects.get(email=request.GET['user_email'])
@@ -33,6 +38,7 @@ class PerevalAPIView(viewsets.ViewSet):
         data = PerevalAddedSerializer(perevals, many=True).data
         return Response(data, status=200)
 
+    @swagger_auto_schema(request_body=PerevalAddedSerializer)
     def post(self, request):
         try:
             data = request.data
@@ -49,12 +55,15 @@ class PerevalAPIView(viewsets.ViewSet):
             except:
                 user_serializer = UsersSerializer(data=data['user'])
 
-            images = data['images']
+            try:
+                images = data['images']
+                data.pop('images')
+            except:
+                images = []
 
             serializer = PerevalAddedSerializer(data=data)
             if serializer.is_valid():
                 data.pop('user')
-                data.pop('images')
                 pereval_new = PerevalAdded.objects.create(
                     user=create_dependence(user_serializer),
                     coords=create_dependence(CoordsSerializer(data=data.pop('coords'))),
@@ -72,6 +81,7 @@ class PerevalAPIView(viewsets.ViewSet):
         except Exception as inst:
             return Response({'message': str(inst), 'id': None}, status=500)
 
+    @swagger_auto_schema(metods=['patch'], request_body=PerevalAddedSerializer)
     def edit_one_record(self, reguest, **kwargs):
         try:
             pereval = PerevalAdded.objects.get(pk=kwargs['pk'])
